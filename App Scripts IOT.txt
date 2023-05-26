@@ -1,0 +1,47 @@
+/*
+Base On : https://github.com/fustyles/Arduino/tree/master/ESP32-CAM_GoogleSpreadsheet
+https://www.youtube.com/watch?v=f46VBqWwUuI
+*/
+
+function doPost(e) {
+  var myFile = e.parameter.myFile;
+  var myFilename = Utilities.formatDate(new Date(), "GMT", "yyyyMMddHHmmss")+"_"+e.parameter.myFilename;
+  //  1xz-ZWHPAne06qD8XXHkG1dlc6Fxh4l37KcU627Aghc8
+  var mySpreadsheetID = '1PdnnAZfVuNnX7tEC9mAGjr1pavvd-TjLLGtIfosWYhE';
+  var myFoldername = 'ESP32_CAM';
+  
+  var contentType = myFile.substring(myFile.indexOf(":")+1, myFile.indexOf(";"));
+  var data = myFile.substring(myFile.indexOf(",")+1);
+  data = Utilities.base64Decode(data);
+  var blob = Utilities.newBlob(data, contentType, myFilename);
+  
+  //var ss = SpreadsheetApp.openByUrl('https://docs.google.com'+mySpreadsheet)
+    var ss = SpreadsheetApp.openById(mySpreadsheetID)
+  ss.getActiveSheet().setHiddenGridlines(true);
+  var sheet = ss.getSheets()[0];
+  var newrow = ss.getLastRow();
+  
+  //sheet.insertImage(blob, myCellRow, myCellCol);
+
+  // save to google drive
+  var folder, folders = DriveApp.getFoldersByName(myFoldername);
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = DriveApp.createFolder(myFoldername);
+  }
+  var file = folder.createFile(blob);    
+  file.setDescription("Uploaded by " + myFilename);
+  
+  // Get Google Drive ImageID
+  var imageID = file.getUrl().substring(file.getUrl().indexOf("/d/")+3,file.getUrl().indexOf("view")-1);
+  var imageUrl = "https://drive.google.com/uc?authuser=0&id="+imageID;
+
+// Set Row and Column in google sheets
+  var range = sheet.getRange(newrow,6);
+  
+// Uploade Image URL to google sheets
+  range.setValue(imageUrl);
+     
+  return  ContentService.createTextOutput("ok");
+}
